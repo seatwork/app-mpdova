@@ -12,6 +12,8 @@ cordova plugin add cordova-plugin-vibration
 
 cordova run browser
 cordova run android
+
+cordova build
 ```
 
 ```

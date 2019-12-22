@@ -24,6 +24,6 @@
         <allow-intent href="itms-apps:*" />
     </platform>
 
-    <icon src="www/image/logo.png" />
+    <icon src="www/image/app.png" />
     <preference name="StatusBarBackgroundColor" value="#fff" />
 </widget>
