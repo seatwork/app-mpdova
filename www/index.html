@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="format-detection" content="telephone=no"/>
+  <meta name="msapplication-tap-highlight" content="no"/>
+  <meta name="viewport" content="initial-scale=1, width=device-width, viewport-fit=cover"/>
+  <link rel="stylesheet" href="index.css"/>
+  <script src="cordova.js"></script>
+  <script src="que.js"></script>
+  <script src="index.js"></script>
+  <title>Mpdova</title>
+</head>
+<body>
+
+<header>
+  <div @click="showMenu" class="menu"><i class="menu"></i></div>
+  <div @click="backToTop" class="appname flex">MPDOVA</div>
+  <div @click="switchTab" data-index="0" class="{{ tabIndex==0 ? 'active' : '' }}">播放列表</div>
+  <div @click="switchTab" data-index="1" class="{{ tabIndex==1 ? 'active' : '' }}">音乐库</div>
+</header>
+
+<main class="flex">
+  <!-- Playlist -->
+  <div class="song-list" hidden="tabIndex==0">
+    <div foreach="item in playlist"
+     class="item {{ item.Pos == currentSong.Pos ? 'playing' : '' }}"
+     data-pos="{{ item.Pos }}" @click="play"
+     @touchstart="removeTouchStart" @touchend="removeTouchEnd" @touchmove="removeTouchEnd">
+
+      <div class="title flex">{{ basename(item.file) }}</div>
+      <div class="duration">{{ item.Time }}</div>
+    </div>
+  </div>
+
+  <!-- Filelist -->
+  <div class="song-list" hidden="tabIndex==1">
+    <div foreach="item in filelist" class="item"
+     data-dir="{{ item.directory }}" data-file="{{ item.file }}" @click="opendir"
+     @touchstart="addTouchStart" @touchend="addTouchEnd" @touchmove="addTouchEnd">
+
+      <div class="title flex">{{ item.directory || basename(item.file) }}</div>
+      <div class="duration">{{ item.Time }}</div>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <div class="timeline">
+    <div class="bar" style="width: {{ status.progress }}%"></div>
+    <div class="point" style="left: {{ status.progress }}%"></div>
+  </div>
+
+  <div class="controls">
+    <div class="flex">
+      <div class="title">{{ currentSong.file }}</div>
+      <div class="metadata">
+        <span if="status.bitrate">{{ status.bitrate }}kbps</span>
+        <span if="status.samplingRate">{{ status.samplingRate }}kHz</span>
+        <span if="status.bitDepth">{{ status.bitDepth }}bits</span>
+      </div>
+    </div>
+
+    <button @click="previous" class="previous"></button>
+    <button @click="toggle" class="{{ status.state=='play' ? 'pause' : 'play' }}"
+      @touchstart="stopTouchStart" @touchend="stopTouchEnd" @touchmove="stopTouchEnd">
+    </button>
+    <button @click="next" class="next"></button>
+  </div>
+</footer>
+
+<div class="errmsg" if="errmsg" @click="hideError"><div>{{ errmsg }}</div></div>
+<div class="bgmask" style="display: {{ menuShow ? 'block' : 'none' }}" @click="hideMenu"></div>
+
+<menu style="left: {{ menuShow ? '0' : '-70%' }}">
+  <div class="title"><i class="logo"></i>MPDOVA</div>
+
+  <hr/><!-- Change play mode -->
+  <div @click="single"><i class="{{ status.single==1 ? 'checked' : '' }}"></i>单曲模式</div>
+  <div @click="repeat"><i class="{{ status.repeat==1 ? 'checked' : '' }}"></i>循环模式</div>
+  <div @click="random"><i class="{{ status.random==1 ? 'checked' : '' }}"></i>随机模式</div>
+
+  <hr/><!-- Stop timing -->
+  <div @click="setTiming" data-time="30">
+    <i class="{{ timestop==30 ? 'checked' : '' }}"></i>半小时后停止
+    <span class="countdown" hidden="timestop==30 && countdown">{{ formatDuration(countdown) }}</span>
+  </div>
+  <div @click="setTiming" data-time="60">
+    <i class="{{ timestop==60 ? 'checked' : '' }}"></i>一小时后停止
+    <span class="countdown" hidden="timestop==60 && countdown">{{ formatDuration(countdown) }}</span>
+  </div>
+  <div @click="setTiming" data-time="120">
+    <i class="{{ timestop==120 ? 'checked' : '' }}"></i>两小时后停止
+    <span class="countdown" hidden="timestop==120 && countdown">{{ formatDuration(countdown) }}</span>
+  </div>
+
+  <hr/><!-- Clear and update -->
+  <div @click="clear"><i class="clear"></i>清空播放列表</div>
+  <div @click="update"><i class="update"></i>更新音乐库</div>
+
+  <hr/><!-- Copyright -->
+  <div class="copyright">&copy; 2019 CLOUDSEAT</div>
+</menu>
+
+</body>
+</html>
