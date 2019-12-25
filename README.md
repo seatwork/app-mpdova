@@ -9,6 +9,7 @@ cordova platform add android
 cordova plugin add cordova-plugin-dialogs
 cordova plugin add cordova-plugin-statusbar
 cordova plugin add cordova-plugin-vibration
+cordova plugin add https://github.com/seatwork/cordova-plugin-socket
 
 cordova run browser
 cordova run android

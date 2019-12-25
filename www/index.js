@@ -1,5 +1,3 @@
-const mpdServer = 'http://10.0.0.2:6611'
-
 new Que({
   data: {
     tabIndex: 0,
@@ -15,11 +13,11 @@ new Que({
   },
 
   ready() {
+    this.mpd = new MPD('10.0.0.2', 6600)
     this.switchTab(0)
-    this._addBackListener()
-    this._addSeekListener()
     this._updateStatus()
-    this.updater = setInterval(() => this._updateStatus(), 1000)
+    // this.updater = setInterval(() => this._updateStatus(), 1000)
+    this._addBackListener()
   },
 
   /////////////////////////////////////////////////////////
@@ -44,7 +42,7 @@ new Que({
   },
 
   play(e) {
-    this._exec('play/' + e.currentTarget.dataset.pos, () => this.status.state = 'play')
+    this._exec('play ' + e.currentTarget.dataset.pos, () => this.status.state = 'play')
   },
 
   toggle() {
@@ -64,15 +62,15 @@ new Que({
   },
 
   repeat() {
-    this._exec('repeat/' + Math.pow(0, this.status.repeat))
+    this._exec('repeat ' + Math.pow(0, this.status.repeat))
   },
 
   single() {
-    this._exec('single/' + Math.pow(0, this.status.single))
+    this._exec('single ' + Math.pow(0, this.status.single))
   },
 
   random() {
-    this._exec('random/' + Math.pow(0, this.status.random))
+    this._exec('random ' + Math.pow(0, this.status.random))
   },
 
   update() {
@@ -100,7 +98,7 @@ new Que({
 
   seek(ratio) {
     let time = Math.round(this.currentSong.Time * ratio)
-    this._exec('seekcur/' + time)
+    this._exec('seekcur ' + time)
   },
 
   setTiming(e) {
@@ -143,7 +141,7 @@ new Que({
   removeTouchStart(e) {
     let pos = e.currentTarget.dataset.pos
     this._longpress(e.currentTarget, () => {
-      this._confirm('从播放列表移除', () => this._exec('delete/' + pos, () => this._pl()))
+      this._confirm('从播放列表移除', () => this._exec('delete ' + pos, () => this._pl()))
     })
   },
 
@@ -154,7 +152,7 @@ new Que({
   addTouchStart(e) {
     let data = e.currentTarget.dataset
     this._longpress(e.currentTarget, () => {
-      this._confirm('添加到播放列表', () => this._exec('add/' + (data.dir || data.file)))
+      this._confirm('添加到播放列表', () => this._exec('add ' + (data.dir || data.file)))
     })
   },
 
@@ -175,7 +173,7 @@ new Que({
   /////////////////////////////////////////////////////////
 
   _ls(path = '') {
-    this._exec('lsinfo/' + path, res => this.filelist = res)
+    this._exec('lsinfo ' + path, res => this.filelist = res)
   },
 
   _pl() {
@@ -204,22 +202,18 @@ new Que({
       res.file = this.basename(res.file)
       this.currentSong = res
     })
+
+    setTimeout(() => this._updateStatus(), 1000)
   },
 
   _exec(command, callback) {
-    Que.post({
-      url: mpdServer + '/' + command,
-      withCredentials: false,
-      success: res => {
-        if (res && res.error) {
-          this.errmsg = res.error
-        } else {
-          callback && callback(res)
-        }
+    this.mpd.send({
+      command: command,
+      ondata(res) {
+        callback && callback(res)
       },
-      fail: err => {
-        clearInterval(this.updater)
-        this.errmsg = '网络错误'
+      onerror(err) {
+        this.errmsg = err
       }
     })
   },
@@ -242,52 +236,6 @@ new Que({
     })
   },
 
-  _addSeekListener() {
-    const timeline = document.querySelector('.timeline')
-    const seekPoint = document.querySelector('.point')
-
-    // 点击进度条
-    timeline.addEventListener('mousedown', e => {
-      if (this.status.state == 'stop') return
-
-      let timelineRect = timeline.getBoundingClientRect()
-      let seekPointRect = seekPoint.getBoundingClientRect()
-      let x = e.clientX - timelineRect.x - (seekPointRect.width / 2)
-      seekPoint.style.left = x + 'px'
-      this.seek(x / timelineRect.width)
-    })
-
-    // 拖动指示点
-    seekPoint.addEventListener('mousedown', e => {
-      if (this.status.state == 'stop') return
-      let timelineRect = timeline.getBoundingClientRect()
-      let seekPointRect = seekPoint.getBoundingClientRect()
-      let startX = e.clientX - seekPoint.offsetLeft
-
-      document.onmousemove = function(e) {
-        seekPoint.moved = true
-        let x = e.clientX - startX
-        let max = timelineRect.width - seekPointRect.width
-        x = x < 0 ? 0 : x
-        x = x > max ? max : x
-        seekPoint.style.left = x + 'px'
-        seekPoint.x = x
-
-        // 当拖动鼠标过快时防止选择内容
-        window.getSelection ? window.getSelection().removeAllRanges() : document.selection.empty()
-      }
-    })
-
-    document.onmouseup = () => {
-      document.onmousemove = null
-      if (seekPoint.moved) {
-        seekPoint.moved = false
-        let timelineRect = timeline.getBoundingClientRect()
-        this.seek(seekPoint.x / timelineRect.width)
-      }
-    }
-  },
-
   /////////////////////////////////////////////////////////
   // Utils
   /////////////////////////////////////////////////////////
@@ -297,10 +245,7 @@ new Que({
   },
 
   formatDuration(sec) {
-    let minutes = Math.floor(sec / 60)
-    let seconds = Math.floor((sec % 60) % 60)
-    seconds = seconds < 10 ? '0' + seconds : seconds
-    return minutes + ':' + seconds
+    return MPD.formatDuration(sec)
   },
 
 })
