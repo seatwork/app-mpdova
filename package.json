@@ -25,13 +25,13 @@
   "cordova": {
     "plugins": {
       "cordova-plugin-whitelist": {},
+      "cordova-plugin-dialogs": {},
       "cordova-plugin-statusbar": {},
-      "cordova-plugin-vibration": {},
-      "cordova-plugin-dialogs": {}
+      "cordova-plugin-vibration": {}
     },
     "platforms": [
-      "android",
-      "browser"
+      "browser",
+      "android"
     ]
   }
 }
