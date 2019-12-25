@@ -13,10 +13,8 @@ new Que({
   },
 
   ready() {
-    this.mpd = new MPD('10.0.0.2', 6600)
     this.switchTab(0)
     this._updateStatus()
-    // this.updater = setInterval(() => this._updateStatus(), 1000)
     this._addBackListener()
   },
 
@@ -42,7 +40,7 @@ new Que({
   },
 
   play(e) {
-    this._exec('play ' + e.currentTarget.dataset.pos, () => this.status.state = 'play')
+    this._exec('play/' + e.currentTarget.dataset.pos, () => this.status.state = 'play')
   },
 
   toggle() {
@@ -62,15 +60,15 @@ new Que({
   },
 
   repeat() {
-    this._exec('repeat ' + Math.pow(0, this.status.repeat))
+    this._exec('repeat/' + Math.pow(0, this.status.repeat))
   },
 
   single() {
-    this._exec('single ' + Math.pow(0, this.status.single))
+    this._exec('single/' + Math.pow(0, this.status.single))
   },
 
   random() {
-    this._exec('random ' + Math.pow(0, this.status.random))
+    this._exec('random/' + Math.pow(0, this.status.random))
   },
 
   update() {
@@ -98,7 +96,7 @@ new Que({
 
   seek(ratio) {
     let time = Math.round(this.currentSong.Time * ratio)
-    this._exec('seekcur ' + time)
+    this._exec('seekcur/' + time)
   },
 
   setTiming(e) {
@@ -141,7 +139,7 @@ new Que({
   removeTouchStart(e) {
     let pos = e.currentTarget.dataset.pos
     this._longpress(e.currentTarget, () => {
-      this._confirm('从播放列表移除', () => this._exec('delete ' + pos, () => this._pl()))
+      this._confirm('从播放列表移除', () => this._exec('delete/' + pos, () => this._pl()))
     })
   },
 
@@ -152,7 +150,7 @@ new Que({
   addTouchStart(e) {
     let data = e.currentTarget.dataset
     this._longpress(e.currentTarget, () => {
-      this._confirm('添加到播放列表', () => this._exec('add ' + (data.dir || data.file)))
+      this._confirm('添加到播放列表', () => this._exec('add/' + (data.dir || data.file)))
     })
   },
 
@@ -173,7 +171,7 @@ new Que({
   /////////////////////////////////////////////////////////
 
   _ls(path = '') {
-    this._exec('lsinfo ' + path, res => this.filelist = res)
+    this._exec('lsinfo/' + path, res => this.filelist = res)
   },
 
   _pl() {
@@ -207,12 +205,13 @@ new Que({
   },
 
   _exec(command, callback) {
-    this.mpd.send({
-      command: command,
-      ondata(res) {
+    Que.post({
+      url: 'http://10.0.0.2:6611/' + command,
+      withCredentials: false,
+      success(res) {
         callback && callback(res)
       },
-      onerror(err) {
+      fail(err) {
         this.errmsg = err
       }
     })
@@ -245,7 +244,10 @@ new Que({
   },
 
   formatDuration(sec) {
-    return MPD.formatDuration(sec)
+    let minutes = Math.floor(sec / 60)
+    let seconds = Math.floor((sec % 60) % 60)
+    seconds = seconds < 10 ? '0' + seconds : seconds
+    return minutes + ':' + seconds
   },
 
 })

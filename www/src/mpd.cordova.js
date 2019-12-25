@@ -1,6 +1,14 @@
 /**
- * MPD (Music Player Daemon) Restful API
+ * MPD (Music Player Daemon) API with cordova-plugin-socket
  * https://www.musicpd.org
+ *
+ * Usage:
+ * const mpd = new MPD('10.0.0.2', 6600)
+ * mpd.send({
+ *   command:
+ *   ondata:
+ *   onerror:
+ * })
  *
  * Common Commands:
  * status         - Get player status
