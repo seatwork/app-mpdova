@@ -83,7 +83,7 @@ class MPD {
     return result
   }
 
-  _parsePlaylist(res) {
+  _parseFilelist(res) {
     const result = []
     let item = null
 
@@ -105,9 +105,8 @@ class MPD {
     return result
   }
 
-  _parseFilelist(res) {
-    const result = this._parsePlaylist(res)
-    return result.sort((a, b) => {
+  _sortFilelist(res) {
+    return res.sort((a, b) => {
       if (a.directory && !b.directory) return -1
       let x = a.directory || a.file
       let y = b.directory || b.file
@@ -170,10 +169,11 @@ class MPD {
           result = this._parseStatus(result)
         } else
         if (command == 'playlistinfo') {
-          result = this._parsePlaylist(result)
+          result = this._parseFilelist(result)
         } else
         if (command.startsWith('lsinfo')) {
           result = this._parseFilelist(result)
+          result = this._sortFilelist(result)
         }
       }
     } catch (error) {
