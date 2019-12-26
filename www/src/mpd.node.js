@@ -102,11 +102,13 @@ class MPD {
         item[prop] = value
       }
     })
+    return result
+  }
 
+  _parseFilelist(res) {
+    const result = this._parsePlaylist(res)
     return result.sort((a, b) => {
-      if (a.directory && !b.directory) {
-        return -1
-      }
+      if (a.directory && !b.directory) return -1
       let x = a.directory || a.file
       let y = b.directory || b.file
       return x.localeCompare(y, 'zh')
@@ -167,8 +169,11 @@ class MPD {
         if (command == 'status' || command == 'currentsong') {
           result = this._parseStatus(result)
         } else
-        if (command == 'playlistinfo' || command.startsWith('lsinfo')) {
+        if (command == 'playlistinfo') {
           result = this._parsePlaylist(result)
+        } else
+        if (command.startsWith('lsinfo')) {
+          result = this._parseFilelist(result)
         }
       }
     } catch (error) {
