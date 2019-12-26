@@ -74,32 +74,6 @@ class MPD {
     return data
   }
 
-  async _service(request, response) {
-    const params = request.url.substring(1)
-    const command = decodeURI(params.replace(/\/(.*)$/, ' "$1"'))
-    let result = null
-
-    try {
-      result = await this._sendCommand(command)
-      if (command == 'status' || command == 'currentsong') {
-        result = this._parseStatus(result)
-      } else
-      if (command == 'playlistinfo' || command.startsWith('lsinfo')) {
-        result = this._parsePlaylist(result)
-      }
-    } catch (error) {
-      result = { error }
-    }
-
-    response.setHeader("Access-Control-Allow-Origin", "*")
-    response.setHeader("Access-Control-Allow-Headers", "*")
-    response.setHeader("Access-Control-Allow-Methods","PUT,POST,GET,DELETE,OPTIONS")
-    response.setHeader("Content-Type", "application/json;charset=utf-8")
-
-    response.write(JSON.stringify(result))
-    response.end()
-  }
-
   _parseStatus(res) {
     const result = {}
     res.forEach(line => {
@@ -143,6 +117,67 @@ class MPD {
     let minutes = Math.floor(sec / 60)
     let seconds = Math.floor((sec % 60) % 60)
     return minutes + ':' + String(seconds).padStart(2, '0')
+  }
+
+  _setSchedule(params) {
+    // Request: schedule - Return countdown
+    params = params.split('/')
+    if (params.length == 1) {
+      return this.countdown || 0
+    }
+
+    // Request: schedule/0 - Stop schedule
+    this._clearSchedule()
+    this.countdown = parseInt(params[1]) || 0
+    if (this.countdown <= 0) {
+      return 0
+    }
+
+    // Request: schedule/{countdown} - Start schedule
+    this.scheduler = setInterval(() => {
+      this.countdown -= 1
+      if (this.countdown == 0) {
+        this._clearSchedule()
+        this._sendCommand('stop')
+      }
+    }, 1000)
+    return this.countdown
+  }
+
+  _clearSchedule() {
+    if (this.scheduler)
+    clearInterval(this.scheduler)
+    this.countdown = 0
+  }
+
+  async _service(request, response) {
+    const params = request.url.substring(1)
+    const command = decodeURI(params.replace(/\/(.*)$/, ' "$1"'))
+    let result = null
+
+    try {
+      if (params.startsWith('schedule')) {
+        result = this._setSchedule(params)
+      } else {
+        result = await this._sendCommand(command)
+        if (command == 'status' || command == 'currentsong') {
+          result = this._parseStatus(result)
+        } else
+        if (command == 'playlistinfo' || command.startsWith('lsinfo')) {
+          result = this._parsePlaylist(result)
+        }
+      }
+    } catch (error) {
+      result = { error }
+    }
+
+    response.setHeader("Access-Control-Allow-Origin", "*")
+    response.setHeader("Access-Control-Allow-Headers", "*")
+    response.setHeader("Access-Control-Allow-Methods","PUT,POST,GET,DELETE,OPTIONS")
+    response.setHeader("Content-Type", "application/json;charset=utf-8")
+
+    response.write(JSON.stringify(result))
+    response.end()
   }
 
   run(port) {

@@ -80,17 +80,17 @@
   <div @click="random"><i class="{{ status.random==1 ? 'checked' : '' }}"></i>随机模式</div>
 
   <hr/><!-- Stop timing -->
-  <div @click="setTiming" data-time="30">
-    <i class="{{ timestop==30 ? 'checked' : '' }}"></i>半小时后停止
-    <span class="countdown" hidden="timestop==30 && countdown">{{ formatDuration(countdown) }}</span>
+  <div @click="setSchedule" data-delay="30">
+    <i class="{{ delay==30 ? 'checked' : '' }}"></i>半小时后停止
+    <span class="countdown" hidden="delay==30 && countdown">{{ formatDuration(countdown) }}</span>
   </div>
-  <div @click="setTiming" data-time="60">
-    <i class="{{ timestop==60 ? 'checked' : '' }}"></i>一小时后停止
-    <span class="countdown" hidden="timestop==60 && countdown">{{ formatDuration(countdown) }}</span>
+  <div @click="setSchedule" data-delay="60">
+    <i class="{{ delay==60 ? 'checked' : '' }}"></i>一小时后停止
+    <span class="countdown" hidden="delay==60 && countdown">{{ formatDuration(countdown) }}</span>
   </div>
-  <div @click="setTiming" data-time="120">
-    <i class="{{ timestop==120 ? 'checked' : '' }}"></i>两小时后停止
-    <span class="countdown" hidden="timestop==120 && countdown">{{ formatDuration(countdown) }}</span>
+  <div @click="setSchedule" data-delay="120">
+    <i class="{{ delay==120 ? 'checked' : '' }}"></i>两小时后停止
+    <span class="countdown" hidden="delay==120 && countdown">{{ formatDuration(countdown) }}</span>
   </div>
 
   <hr/><!-- Clear and update -->

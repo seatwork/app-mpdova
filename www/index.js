@@ -7,7 +7,7 @@ new Que({
     playlist: [],
     filelist: [],
     menuShow: false,
-    timestop: 0,
+    delay: 0,
     countdown: 0,
     errmsg: ''
   },
@@ -77,10 +77,12 @@ new Que({
 
   showMenu() {
     this.menuShow = true
+    this._exec('schedule', t => this._startCountdown(t))
   },
 
   hideMenu() {
     this.menuShow = false
+    this._stopCountdown()
   },
 
   hideError() {
@@ -99,25 +101,54 @@ new Que({
     this._exec('seekcur/' + time)
   },
 
-  setTiming(e) {
-    this.timestop = e.currentTarget.dataset.time
-    this.countdown = this.timestop * 60
-
-    if (this.timetask) {
-      clearInterval(this.timetask)
+  setSchedule(e) {
+    if (this.delay) {
+      this._confirm('取消定时停止播放', () => {
+        this._exec('schedule/0', t => this._startCountdown(t))
+        localStorage.removeItem('delay')
+      })
+    } else {
+      const delay = parseInt(e.currentTarget.dataset.delay) * 60
+      this._confirm('设置定时停止播放', () => {
+        this.delay = delay
+        this._exec('schedule/' + this.delay, t => this._startCountdown(t))
+        localStorage.setItem('delay', this.delay)
+      })
     }
-    this.timetask = setInterval(() => {
-      this.countdown -= 1
-      if (this.countdown == 0) {
-        this.timestop = 0
-        this._exec('stop')
-        clearInterval(this.timetask)
-      }
-    }, 1000)
   },
 
   backToTop() {
     document.querySelector('main').scrollTop = 0
+  },
+
+  /////////////////////////////////////////////////////////
+  // Countdown timer
+  /////////////////////////////////////////////////////////
+
+  _startCountdown(t) {
+    this._stopCountdown()
+    if (!t) {
+      this.countdown = 0
+      this.delay = 0
+      return
+    }
+
+    this.countdown = t
+    this.delay = localStorage.getItem('delay') || 0
+
+    this._cdTimer = setInterval(() => {
+      this.countdown -= 1
+      if (this.countdown == 0) {
+        this.delay = 0
+        this._stopCountdown()
+      }
+    }, 1000)
+  },
+
+  _stopCountdown() {
+    if (this._cdTimer) {
+      clearInterval(this._cdTimer)
+    }
   },
 
   /////////////////////////////////////////////////////////
@@ -179,8 +210,6 @@ new Que({
   },
 
   _updateStatus() {
-    if (this.status.state == 'stop') return
-
     this._exec('status', res => {
       if (res.time) {
         let progress = res.time.split(':')
@@ -192,7 +221,6 @@ new Que({
         res.bitDepth = audio[1]
         res.channels = audio[2]
       }
-
       res.progress = res.progress || 0
       this.status = res
     })
