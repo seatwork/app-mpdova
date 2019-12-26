@@ -1,3 +1,5 @@
+Que.MPD_ERROR = false
+
 document.addEventListener('deviceready', () => {
 
   Object.assign(window, {
@@ -18,6 +20,9 @@ document.addEventListener('deviceready', () => {
     },
   })
 
+  if (Que.MPD_ERROR) {
+    alert(Que.MPD_ERROR)
+  }
 })
 
 new Que({
@@ -221,12 +226,17 @@ new Que({
   },
 
   _exec(command, callback) {
+    if (Que.MPD_ERROR) return
+
     Que.post({
       url: 'http://10.0.0.2:6611/' + command,
       withCredentials: false,
-      fail: err => alert(err),
       success: res => {
         callback && callback(res)
+        Que.MPD_ERROR = false
+      },
+      fail: err => {
+        Que.MPD_ERROR = '服务端连接错误'
       }
     })
   },
