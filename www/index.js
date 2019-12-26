@@ -108,10 +108,10 @@ new Que({
         localStorage.removeItem('delay')
       })
     } else {
-      const delay = parseInt(e.currentTarget.dataset.delay) * 60
+      const delay = parseInt(e.currentTarget.dataset.delay)
       this._confirm('设置定时停止播放', () => {
         this.delay = delay
-        this._exec('schedule/' + this.delay, t => this._startCountdown(t))
+        this._exec('schedule/' + this.delay * 60, t => this._startCountdown(t))
         localStorage.setItem('delay', this.delay)
       })
     }
