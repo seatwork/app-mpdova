@@ -123,17 +123,20 @@ class MPD {
     // Request: schedule - Return countdown
     params = params.split('/')
     if (params.length == 1) {
-      return this.countdown || 0
+      return {
+        delay: this.delay || 0,
+        countdown: this.countdown || 0
+      }
     }
 
     // Request: schedule/0 - Stop schedule
     this._clearSchedule()
-    this.countdown = parseInt(params[1]) || 0
-    if (this.countdown <= 0) {
+    this.delay = this.countdown = parseInt(params[1]) || 0
+    if (this.delay <= 0) {
       return 0
     }
 
-    // Request: schedule/{countdown} - Start schedule
+    // Request: schedule/{delay} - Start schedule
     this.scheduler = setInterval(() => {
       this.countdown -= 1
       if (this.countdown == 0) {
@@ -141,13 +144,14 @@ class MPD {
         this._sendCommand('stop')
       }
     }, 1000)
-    return this.countdown
+    return 0
   }
 
   _clearSchedule() {
-    if (this.scheduler)
-    clearInterval(this.scheduler)
-    this.countdown = 0
+    this.delay = this.countdown = 0
+    if (this.scheduler) {
+      clearInterval(this.scheduler)
+    }
   }
 
   async _service(request, response) {

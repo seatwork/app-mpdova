@@ -25,7 +25,7 @@
     <div foreach="item in playlist"
      class="item {{ item.Pos == currentSong.Pos ? 'playing' : '' }}"
      data-pos="{{ item.Pos }}" @click="play"
-     @touchstart="removeTouchStart" @touchend="removeTouchEnd" @touchmove="removeTouchEnd">
+     @touchstart="removeTouchStart" @touchend="touchEnd" @touchmove="touchEnd">
 
       <div class="title flex">{{ basename(item.file) }}</div>
       <div class="duration">{{ item.Time }}</div>
@@ -35,8 +35,8 @@
   <!-- Filelist -->
   <div class="song-list" hidden="tabIndex==1">
     <div foreach="item in filelist" class="item"
-     data-dir="{{ item.directory }}" data-file="{{ item.file }}" @click="opendir"
-     @touchstart="addTouchStart" @touchend="addTouchEnd" @touchmove="addTouchEnd">
+     data-dir="{{ item.directory }}" data-file="{{ item.file }}" @click="openDirectory"
+     @touchstart="addTouchStart" @touchend="touchEnd" @touchmove="touchEnd">
 
       <div class="title flex">{{ item.directory || basename(item.file) }}</div>
       <div class="duration">{{ item.Time }}</div>
@@ -62,16 +62,14 @@
 
     <button @click="previous" class="previous"></button>
     <button @click="toggle" class="{{ status.state=='play' ? 'pause' : 'play' }}"
-      @touchstart="stopTouchStart" @touchend="stopTouchEnd" @touchmove="stopTouchEnd">
+      @touchstart="stopTouchStart" @touchend="touchEnd" @touchmove="touchEnd">
     </button>
     <button @click="next" class="next"></button>
   </div>
 </footer>
 
-<div class="errmsg" if="errmsg" @click="hideError"><div>{{ errmsg }}</div></div>
-<div class="bgmask" style="display: {{ menuShow ? 'block' : 'none' }}" @click="hideMenu"></div>
-
-<menu style="left: {{ menuShow ? '0' : '-70%' }}">
+<div class="bgmask" style="display: {{ menuOn ? 'block' : 'none' }}" @click="hideMenu"></div>
+<menu style="left: {{ menuOn ? '0' : '-70%' }}">
   <div class="title"><i class="logo"></i>MPDOVA</div>
 
   <hr/><!-- Change play mode -->

@@ -1,15 +1,35 @@
+document.addEventListener('deviceready', () => {
+
+  Object.assign(window, {
+    alert(message) {
+      navigator.notification.alert(message, null, '', '关闭')
+    },
+
+    confirm(message, callback) {
+      navigator.notification.confirm(message, index => {
+        if (index == 1) callback()
+      }, '', ['确定','取消'])
+    },
+
+    longpress(el, fn) {
+      el.longPressTimer = setTimeout(() => {
+        navigator.vibrate(50); fn()
+      }, 500)
+    },
+  })
+
+})
+
 new Que({
   data: {
     tabIndex: 0,
-    dirPath: '',
+    delay: 0,
+    countdown: 0,
     status: {},
     currentSong: {},
     playlist: [],
     filelist: [],
-    menuShow: false,
-    delay: 0,
-    countdown: 0,
-    errmsg: ''
+    menuOn: false,
   },
 
   ready() {
@@ -23,32 +43,30 @@ new Que({
   /////////////////////////////////////////////////////////
 
   switchTab(e) {
-    this.tabIndex = parseInt(e.currentTarget ? e.currentTarget.dataset.index : e)
+    const target = e.currentTarget
+    this.tabIndex = parseInt(target ? target.dataset.index : e)
+
     switch (this.tabIndex) {
-      case 0: this._pl(); break
-      case 1: this._ls(); break
+      case 0: this._getPlaylist(); break
+      case 1: this._getFilelist(); break
       default: break
     }
   },
 
-  opendir(e) {
-    let dir = e.currentTarget.dataset.dir
+  openDirectory(e) {
+    const dir = e.currentTarget.dataset.dir
     if (dir) {
-      this.dirPath = dir
-      this._ls(this.dirPath)
+      this._directory = dir
+      this._getFilelist(dir)
     }
   },
 
   play(e) {
-    this._exec('play/' + e.currentTarget.dataset.pos, () => this.status.state = 'play')
+    this._exec('play/' + e.currentTarget.dataset.pos)
   },
 
   toggle() {
-    if (this.status.state == 'stop') {
-      this._exec('play', () => this.status.state = 'play')
-    } else {
-      this._exec('pause')
-    }
+    this.status.state == 'stop' ? this._exec('play') : this._exec('pause')
   },
 
   next() {
@@ -72,49 +90,32 @@ new Que({
   },
 
   update() {
-    this._exec('update')
-  },
-
-  showMenu() {
-    this.menuShow = true
-    this._exec('schedule', t => this._startCountdown(t))
-  },
-
-  hideMenu() {
-    this.menuShow = false
-    this._stopCountdown()
-  },
-
-  hideError() {
-    this.errmsg = ''
+    this._exec('update', () => alert('更新成功'))
   },
 
   clear() {
-    this._confirm('确定清空播放列表吗？', () => {
+    confirm('确定清空播放列表吗？', () => {
       this._exec('clear')
       this.playlist = []
     })
   },
 
-  seek(ratio) {
-    let time = Math.round(this.currentSong.Time * ratio)
-    this._exec('seekcur/' + time)
+  showMenu() {
+    this.menuOn = true
+    this._startCountdown()
+  },
+
+  hideMenu() {
+    this.menuOn = false
+    this._stopCountdown()
   },
 
   setSchedule(e) {
-    if (this.delay) {
-      this._confirm('取消定时停止播放', () => {
-        this._exec('schedule/0', t => this._startCountdown(t))
-        localStorage.removeItem('delay')
-      })
-    } else {
-      const delay = parseInt(e.currentTarget.dataset.delay)
-      this._confirm('设置定时停止播放', () => {
-        this.delay = delay
-        this._exec('schedule/' + this.delay * 60, t => this._startCountdown(t))
-        localStorage.setItem('delay', this.delay)
-      })
+    if (this.status.state == 'stop') {
+      return alert('播放器已经停止')
     }
+    this.delay = this.countdown = parseInt(e.currentTarget.dataset.delay)
+    this._exec('schedule/' + this.delay, () => this._startCountdown())
   },
 
   backToTop() {
@@ -125,29 +126,29 @@ new Que({
   // Countdown timer
   /////////////////////////////////////////////////////////
 
-  _startCountdown(t) {
-    this._stopCountdown()
-    if (!t) {
-      this.countdown = 0
-      this.delay = 0
-      return
+  _startCountdown() {
+    if (this._countdownTimer) {
+      clearInterval(this._countdownTimer)
     }
 
-    this.countdown = t
-    this.delay = localStorage.getItem('delay') || 0
+    const loop = () => {
+      this._exec('schedule', res => {
+        this.delay = res.delay
+        this.countdown = res.countdown
+        if (this.countdown == 0) {
+          this._stopCountdown()
+        }
+      })
+    }
 
-    this._cdTimer = setInterval(() => {
-      this.countdown -= 1
-      if (this.countdown == 0) {
-        this.delay = 0
-        this._stopCountdown()
-      }
-    }, 1000)
+    loop()
+    this._countdownTimer = setInterval(loop, 1000)
   },
 
   _stopCountdown() {
-    if (this._cdTimer) {
-      clearInterval(this._cdTimer)
+    this.delay = this.countdown = 0
+    if (this._countdownTimer) {
+      clearInterval(this._countdownTimer)
     }
   },
 
@@ -155,58 +156,45 @@ new Que({
   // Longpress events
   /////////////////////////////////////////////////////////
 
-  _longpress(el, fn) {
-    el.timer = setTimeout(() => {
-      navigator.vibrate(50); fn()
-    }, 500)
-  },
-
-  _confirm(text, cb) {
-    navigator.notification.confirm(text, index => {
-      if (index == 1) cb()
-    }, '', ['确定','取消'])
-  },
-
   removeTouchStart(e) {
     let pos = e.currentTarget.dataset.pos
-    this._longpress(e.currentTarget, () => {
-      this._confirm('从播放列表移除', () => this._exec('delete/' + pos, () => this._pl()))
+    longpress(e.currentTarget, () => {
+      confirm('从播放列表移除', () => {
+        this._exec('delete/' + pos, () => this._getPlaylist())
+      })
     })
-  },
-
-  removeTouchEnd(e) {
-    clearTimeout(e.currentTarget.timer)
   },
 
   addTouchStart(e) {
     let data = e.currentTarget.dataset
-    this._longpress(e.currentTarget, () => {
-      this._confirm('添加到播放列表', () => this._exec('add/' + (data.dir || data.file)))
+    longpress(e.currentTarget, () => {
+      confirm('添加到播放列表', () => {
+        this._exec('add/' + (data.dir || data.file))
+      })
     })
   },
 
-  addTouchEnd(e) {
-    clearTimeout(e.currentTarget.timer)
-  },
-
   stopTouchStart(e) {
-    this._longpress(e.currentTarget, () => this._exec('stop'))
+    longpress(e.currentTarget, () => {
+      this._exec('stop')
+      this._exec('schedule/0')
+    })
   },
 
-  stopTouchEnd(e) {
-    clearTimeout(e.currentTarget.timer)
+  touchEnd(e) {
+    clearTimeout(e.currentTarget.longPressTimer)
   },
 
   /////////////////////////////////////////////////////////
   // Common execute
   /////////////////////////////////////////////////////////
 
-  _ls(path = '') {
+  _getFilelist(path = '') {
     this._exec('lsinfo/' + path, res => this.filelist = res)
   },
 
-  _pl() {
-    this._exec('playlistinfo', res => this.playlist = res);
+  _getPlaylist() {
+    this._exec('playlistinfo', res => this.playlist = res)
   },
 
   _updateStatus() {
@@ -236,11 +224,9 @@ new Que({
     Que.post({
       url: 'http://10.0.0.2:6611/' + command,
       withCredentials: false,
-      success(res) {
+      fail: err => alert(err),
+      success: res => {
         callback && callback(res)
-      },
-      fail(err) {
-        this.errmsg = err
       }
     })
   },
@@ -251,12 +237,12 @@ new Que({
 
   _addBackListener() {
     document.addEventListener("backbutton", () => {
-      if (this.menuShow) {
-        this.menuShow = false
+      if (this.menuOn) {
+        this.hideMenu()
       } else
-      if (this.dirPath && this.tabIndex === 1) {
-        this.dirPath = this.dirPath.substr(0, this.dirPath.lastIndexOf('/'))
-        this._ls(this.dirPath)
+      if (this._directory && this.tabIndex === 1) {
+        this._directory = this._directory.substr(0, this._directory.lastIndexOf('/'))
+        this._getFilelist(this._directory)
       } else {
         navigator.app.exitApp()
       }
