@@ -1,29 +1,12 @@
-Que.MPD_ERROR = false
+window.onerror = function(msg, url, line) {
+   const idx = url.lastIndexOf('/')
+   if (idx > -1) url = url.substring(idx + 1)
+   alert('ERROR in ' + url + ' (line #' + line + '): ' + msg)
+}
 
-document.addEventListener('deviceready', () => {
-
-  Object.assign(window, {
-    alert(message) {
-      navigator.notification.alert(message, null, '', '关闭')
-    },
-
-    confirm(message, callback) {
-      navigator.notification.confirm(message, index => {
-        if (index == 1) callback()
-      }, '', ['确定','取消'])
-    },
-
-    longpress(el, fn) {
-      el.longPressTimer = setTimeout(() => {
-        navigator.vibrate(50); fn()
-      }, 500)
-    },
-  })
-
-  if (Que.MPD_ERROR) {
-    alert(Que.MPD_ERROR)
-  }
-})
+///////////////////////////////////////////////////////////
+// Que Framework
+///////////////////////////////////////////////////////////
 
 new Que({
   data: {
@@ -38,6 +21,11 @@ new Que({
   },
 
   ready() {
+    initPlugins()
+    mpc.connect('10.0.0.2', 6600, null, err => {
+      mpc.error = true
+      alert('服务端连接失败: ' + err)
+    })
     this.switchTab(0)
     this._updateStatus()
     this._addBackListener()
@@ -67,94 +55,63 @@ new Que({
   },
 
   play(e) {
-    this._exec('play/' + e.currentTarget.dataset.pos)
+    mpc.cmd('play ' + e.currentTarget.dataset.pos)
   },
 
   toggle() {
-    this.status.state == 'stop' ? this._exec('play') : this._exec('pause')
+    this.status.state == 'stop' ? mpc.cmd('play') : mpc.cmd('pause')
   },
 
   next() {
-    this._exec('next')
+    mpc.cmd('next')
   },
 
   previous() {
-    this._exec('previous')
+    mpc.cmd('previous')
   },
 
   repeat() {
-    this._exec('repeat/' + Math.pow(0, this.status.repeat))
+    mpc.cmd('repeat ' + Math.pow(0, this.status.repeat))
   },
 
   single() {
-    this._exec('single/' + Math.pow(0, this.status.single))
+    mpc.cmd('single ' + Math.pow(0, this.status.single))
   },
 
   random() {
-    this._exec('random/' + Math.pow(0, this.status.random))
+    mpc.cmd('random ' + Math.pow(0, this.status.random))
   },
 
   update() {
-    this._exec('update', () => alert('更新成功'))
+    mpc.cmd('update', () => alert('更新成功'))
   },
 
   clear() {
     confirm('确定清空播放列表吗？', () => {
-      this._exec('clear')
+      mpc.cmd('clear')
       this.playlist = []
     })
   },
 
   showMenu() {
     this.menuOn = true
-    this._startCountdown()
   },
 
   hideMenu() {
     this.menuOn = false
-    this._stopCountdown()
   },
 
   setSchedule(e) {
     if (this.status.state == 'stop') {
       return alert('播放器已经停止')
     }
+
     this.delay = this.countdown = parseInt(e.currentTarget.dataset.delay)
-    this._exec('schedule/' + this.delay, () => this._startCountdown())
+    mpc.schedule(this.delay)
   },
 
   backToTop() {
     document.querySelector('main').scrollTop = 0
-  },
-
-  /////////////////////////////////////////////////////////
-  // Countdown timer
-  /////////////////////////////////////////////////////////
-
-  _startCountdown() {
-    if (this._countdownTimer) {
-      clearInterval(this._countdownTimer)
-    }
-
-    const loop = () => {
-      this._exec('schedule', res => {
-        this.delay = res.delay
-        this.countdown = res.countdown
-        if (this.countdown == 0) {
-          this._stopCountdown()
-        }
-      })
-    }
-
-    loop()
-    this._countdownTimer = setInterval(loop, 1000)
-  },
-
-  _stopCountdown() {
-    this.delay = this.countdown = 0
-    if (this._countdownTimer) {
-      clearInterval(this._countdownTimer)
-    }
   },
 
   /////////////////////////////////////////////////////////
@@ -165,7 +122,7 @@ new Que({
     let pos = e.currentTarget.dataset.pos
     longpress(e.currentTarget, () => {
       confirm('从播放列表移除', () => {
-        this._exec('delete/' + pos, () => this._getPlaylist())
+        mpc.cmd('delete ' + pos, () => this._getPlaylist())
       })
     })
   },
@@ -174,15 +131,15 @@ new Que({
     let data = e.currentTarget.dataset
     longpress(e.currentTarget, () => {
       confirm('添加到播放列表', () => {
-        this._exec('add/' + (data.dir || data.file))
+        mpc.cmd('add ' + (data.dir || data.file))
       })
     })
   },
 
   stopTouchStart(e) {
     longpress(e.currentTarget, () => {
-      this._exec('stop')
-      this._exec('schedule/0')
+      mpc.cmd('stop')
+      mpc.cmd('schedule 0')
     })
   },
 
@@ -191,19 +148,19 @@ new Que({
   },
 
   /////////////////////////////////////////////////////////
-  // Common execute
+  // Command execution
   /////////////////////////////////////////////////////////
 
   _getFilelist(path = '') {
-    this._exec('lsinfo/' + path, res => this.filelist = res)
+    mpc.cmd('lsinfo ' + path, res => this.filelist = res)
   },
 
   _getPlaylist() {
-    this._exec('playlistinfo', res => this.playlist = res)
+    mpc.cmd('playlistinfo', res => this.playlist = res)
   },
 
   _updateStatus() {
-    this._exec('status', res => {
+    mpc.cmd('status', res => {
       if (res.time) {
         let progress = res.time.split(':')
         res.progress = parseFloat(progress[0] / progress[1] * 100).toFixed(2)
@@ -217,28 +174,13 @@ new Que({
       res.progress = res.progress || 0
       this.status = res
     })
-    this._exec('currentsong', res => {
-      res.file = this.basename(res.file)
+
+    mpc.cmd('currentsong', res => {
       this.currentSong = res
     })
-
-    setTimeout(() => this._updateStatus(), 1000)
-  },
-
-  _exec(command, callback) {
-    if (Que.MPD_ERROR) return
-
-    Que.post({
-      url: 'http://10.0.0.2:6611/' + command,
-      withCredentials: false,
-      success: res => {
-        callback && callback(res)
-        Que.MPD_ERROR = false
-      },
-      fail: err => {
-        Que.MPD_ERROR = '服务端连接错误'
-      }
-    })
+    setTimeout(() => {
+      this._updateStatus()
+    }, 1000)
   },
 
   /////////////////////////////////////////////////////////
@@ -246,7 +188,7 @@ new Que({
   /////////////////////////////////////////////////////////
 
   _addBackListener() {
-    document.addEventListener("backbutton", () => {
+    document.addEventListener('backbutton', () => {
       if (this.menuOn) {
         this.hideMenu()
       } else
@@ -268,10 +210,110 @@ new Que({
   },
 
   formatDuration(sec) {
-    let minutes = Math.floor(sec / 60)
-    let seconds = Math.floor((sec % 60) % 60)
-    seconds = seconds < 10 ? '0' + seconds : seconds
-    return minutes + ':' + seconds
-  },
+    if (isFinite(sec)) {
+      let minutes = Math.floor(sec / 60)
+      let seconds = Math.floor((sec % 60) % 60)
+      seconds = seconds < 10 ? '0' + seconds : seconds
+      return minutes + ':' + seconds
+    }
+    return ''
+  }
 
 })
+
+///////////////////////////////////////////////////////////
+// Init plugins
+///////////////////////////////////////////////////////////
+
+function initPlugins() {
+
+  /////////////////////////////////////////////////////////
+  // Assign notify plugin to window
+  /////////////////////////////////////////////////////////
+
+  Object.assign(window, {
+    alert(message) {
+      navigator.notification.alert(message, null, '', '关闭')
+    },
+
+    confirm(message, callback) {
+      navigator.notification.confirm(message, index => {
+        if (index == 1) callback()
+      }, '', ['确定','取消'])
+    },
+
+    longpress(el, fn) {
+      el.longPressTimer = setTimeout(() => {
+        navigator.vibrate(50); fn()
+      }, 500)
+    }
+  })
+
+  /////////////////////////////////////////////////////////
+  // Assign shortcut methods to mpc
+  /////////////////////////////////////////////////////////
+
+  Object.assign(window.mpc, {
+    cmd(args, callback) {
+      if (mpc.error) return
+      args = args.replace(/ (.*)$/, ' "$1"')
+      const command = args.split(' ')[0]
+
+      mpc.command(args, res => {
+        res = mpc.parse(command, res)
+        callback && callback(res)
+      })
+    },
+
+    parse(command, data) {
+      switch(command) {
+        case 'currentsong':
+        case 'status': return this.parseStatus(data)
+        case 'playlistinfo': return this.parseList(data)
+        case 'lsinfo': return this.sort(this.parseList(data))
+        default: return data
+      }
+    },
+
+    parseStatus(res) {
+      const result = {}
+      res = res.split('\n')
+
+      res.forEach(line => {
+        line = line.split(': ')
+        result[line[0]] = isFinite(line[1]) ? parseFloat(line[1]) : line[1]
+      })
+      return result
+    },
+
+    parseList(res) {
+      const result = []
+      let item = null
+      res = res.split('\n')
+
+      res.forEach(line => {
+        if (line) {
+          line = line.split(': ')
+          if (line[0] == 'directory' || line[0] == 'file') {
+            item = {}
+            result.push(item)
+          }
+          item[line[0]] = line[1]
+        }
+      })
+      return result
+    },
+
+    sort(res) {
+      return res.sort((a, b) => {
+        if (a.directory && !b.directory) {
+          return -1
+        }
+        let x = a.directory || a.file
+        let y = b.directory || b.file
+        return x.localeCompare(y, 'zh')
+      })
+    }
+  })
+
+}

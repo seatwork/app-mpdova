@@ -28,7 +28,7 @@
      @touchstart="removeTouchStart" @touchend="touchEnd" @touchmove="touchEnd">
 
       <div class="title flex">{{ basename(item.file) }}</div>
-      <div class="duration">{{ item.Time }}</div>
+      <div class="duration">{{ formatDuration(item.Time) }}</div>
     </div>
   </div>
 
@@ -39,7 +39,7 @@
      @touchstart="addTouchStart" @touchend="touchEnd" @touchmove="touchEnd">
 
       <div class="title flex">{{ item.directory || basename(item.file) }}</div>
-      <div class="duration">{{ item.Time }}</div>
+      <div class="duration">{{ formatDuration(item.Time) }}</div>
     </div>
   </div>
 </main>
@@ -52,7 +52,7 @@
 
   <div class="controls">
     <div class="flex">
-      <div class="title">{{ currentSong.file }}</div>
+      <div class="title">{{ basename(currentSong.file) }}</div>
       <div class="metadata">
         <span if="status.bitrate">{{ status.bitrate }}kbps</span>
         <span if="status.samplingRate">{{ status.samplingRate }}kHz</span>

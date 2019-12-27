@@ -1,5 +1,6 @@
 /**
- * MPD (Music Player Daemon) Restful API (HTTP Server)
+ * MPD (Music Player Daemon) Restful API
+ * Convert MPD Socket to HTTP Server
  * https://www.musicpd.org
  *
  * Common Commands:
