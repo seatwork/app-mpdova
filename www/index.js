@@ -23,13 +23,14 @@ new Que({
 
   ready() {
     initPlugins()
-    mpc.connect('10.0.0.2', 6600, null, err => {
+    mpc.connect('10.0.0.2', 6600, () => {
+      this.switchTab(0)
+      this._updateStatus()
+      this._addBackListener()
+    }, err => {
       mpc.error = true
       alert('Connect MPD failed: ' + err)
     })
-    this.switchTab(0)
-    this._updateStatus()
-    this._addBackListener()
   },
 
   /////////////////////////////////////////////////////////

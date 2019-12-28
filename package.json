@@ -16,7 +16,7 @@
     "cordova-android": "^8.1.0",
     "cordova-browser": "^6.0.0",
     "cordova-plugin-dialogs": "^2.0.2",
-    "cordova-plugin-mpc": "file:../cordova-plugin-mpc",
+    "cordova-plugin-mpc": "git+https://github.com/seatwork/cordova-plugin-mpc.git",
     "cordova-plugin-statusbar": "^2.4.3",
     "cordova-plugin-vibration": "^3.1.1"
   },
