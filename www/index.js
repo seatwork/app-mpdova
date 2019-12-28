@@ -8,6 +8,8 @@ window.onerror = function(msg, url, line) {
 // Que Framework
 ///////////////////////////////////////////////////////////
 
+const SERVER_KEY = 'SERVER_KEY'
+
 new Que({
   data: {
     tabIndex: 0,
@@ -23,14 +25,43 @@ new Que({
 
   ready() {
     initPlugins()
-    mpc.connect('10.0.0.2', 6600, () => {
+
+    let server = localStorage.getItem(SERVER_KEY)
+    if (server) {
+      server = server.split(':')
+      this._connectMpc(server[0], server[1])
+    } else {
+      navigator.notification.prompt('', res => {
+        if (res.buttonIndex == 1) {
+          localStorage.setItem(SERVER_KEY, res.input1)
+        }
+        this.ready()
+      }, '添加服务器', ['确定'], '10.0.0.2:6600')
+    }
+  },
+
+  _connectMpc(host, port) {
+    mpc.connect(host, port, (res) => {
+      mpc.error = false
       this.switchTab(0)
       this._updateStatus()
       this._addBackListener()
     }, err => {
       mpc.error = true
+      mpc.disconnect()
       alert('Connect MPD failed: ' + err)
     })
+  },
+
+  setting() {
+    let server = localStorage.getItem(SERVER_KEY)
+    navigator.notification.prompt('', res => {
+      if (res.buttonIndex == 1) {
+        localStorage.setItem(SERVER_KEY, res.input1)
+        this.ready()
+        this.hideMenu()
+      }
+    }, '服务器设置', ['确定'], server)
   },
 
   /////////////////////////////////////////////////////////
@@ -152,7 +183,13 @@ new Que({
   },
 
   _getPlaylist() {
-    mpc.cmd('playlistinfo', res => this.playlist = res)
+    mpc.cmd('playlistinfo', res => {
+      if (res && res.length > 0) {
+        this.playlist = res
+      } else {
+        this.switchTab(1)
+      }
+    })
   },
 
   _updateStatus() {

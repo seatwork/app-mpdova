@@ -255,6 +255,10 @@ i.checked {
   background-image: url(image/checked.png);
 }
 
+i.server {
+  background-image: url(image/server.png);
+}
+
 i.clear {
   background-image: url(image/clear.png);
 }
