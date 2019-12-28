@@ -106,9 +106,6 @@ new Que({
     if (this.status.state == 'stop') {
       return alert('播放器已经停止')
     }
-
-    this.delay = this.countdown = parseInt(e.currentTarget.dataset.delay)
-    mpc.schedule(this.delay)
   },
 
   backToTop() {
@@ -138,10 +135,7 @@ new Que({
   },
 
   stopTouchStart(e) {
-    longpress(e.currentTarget, () => {
-      mpc.cmd('stop')
-      mpc.cmd('schedule 0')
-    })
+    longpress(e.currentTarget, () => mpc.cmd('stop'))
   },
 
   touchEnd(e) {
