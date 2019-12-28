@@ -1,7 +1,7 @@
 window.onerror = function(msg, url, line) {
    const idx = url.lastIndexOf('/')
    if (idx > -1) url = url.substring(idx + 1)
-   alert('ERROR in ' + url + ' (line #' + line + '): ' + msg)
+   alert('ERROR in ' + url + ' (LINE #' + line + '): ' + msg)
 }
 
 ///////////////////////////////////////////////////////////
@@ -17,6 +17,7 @@ new Que({
     currentSong: {},
     playlist: [],
     filelist: [],
+    directory: '',
     menuOn: false,
   },
 
@@ -24,7 +25,7 @@ new Que({
     initPlugins()
     mpc.connect('10.0.0.2', 6600, null, err => {
       mpc.error = true
-      alert('服务端连接失败: ' + err)
+      alert('Connect MPD failed: ' + err)
     })
     this.switchTab(0)
     this._updateStatus()
@@ -49,7 +50,7 @@ new Que({
   openDirectory(e) {
     const dir = e.currentTarget.dataset.dir
     if (dir) {
-      this._directory = dir
+      this.directory = dir
       this._getFilelist(dir)
     }
   },
@@ -192,9 +193,9 @@ new Que({
       if (this.menuOn) {
         this.hideMenu()
       } else
-      if (this._directory && this.tabIndex === 1) {
-        this._directory = this._directory.substr(0, this._directory.lastIndexOf('/'))
-        this._getFilelist(this._directory)
+      if (this.directory && this.tabIndex === 1) {
+        this.directory = this.directory.substr(0, this.directory.lastIndexOf('/'))
+        this._getFilelist(this.directory)
       } else {
         navigator.app.exitApp()
       }
@@ -262,6 +263,9 @@ function initPlugins() {
       mpc.command(args, res => {
         res = mpc.parse(command, res)
         callback && callback(res)
+      }, err => {
+        mpc.error = true
+        alert('Send command failed: ' + err)
       })
     },
 
