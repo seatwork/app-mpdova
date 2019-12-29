@@ -33,6 +33,7 @@ new Que({
       this.switchTab(0)
       this._addStatusListener()
       this._addTimelineListener()
+      this._addSwipeListenr()
       this._addBackListener()
     }, () => {
       this._addMpdServer()
@@ -275,6 +276,20 @@ new Que({
         seeker.style.width = 0
         this._seek(controls.x / controls.clientWidth)
       }
+    })
+  },
+
+  _addSwipeListenr() {
+    const main = document.querySelector('main')
+    main.addEventListener('touchstart', e => {
+      main.startX = e.touches[0].clientX
+    })
+    main.addEventListener('touchmove', e => {
+      main.endX = e.touches[0].clientX
+    })
+    main.addEventListener('touchend', e => {
+      if (main.endX - main.startX > 50) return this.switchTab(0)
+      if (main.startX - main.endX > 50) return this.switchTab(1)
     })
   },
 
