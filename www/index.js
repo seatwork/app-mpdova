@@ -138,6 +138,10 @@ new Que({
     })
   },
 
+  _seek(ratio) {
+    mpc.cmd('seekcur ' + Math.round(this.currentSong.Time * ratio))
+  },
+
   showMenu() {
     this.menuOn = true
   },
@@ -251,7 +255,27 @@ new Que({
   },
 
   _addTimelineListener() {
+    const controls = document.querySelector('.controls')
+    const seeker = document.querySelector('.seeker')
 
+    controls.addEventListener('touchstart', e => {
+      if (e.target.tagName != 'BUTTON' && this.status.state != 'stop') {
+        controls.active = true
+      }
+    })
+    controls.addEventListener('touchmove', e => {
+      if (controls.active) {
+        controls.x = e.touches[0].clientX
+        seeker.style.width = controls.x + 'px'
+      }
+    })
+    controls.addEventListener('touchend', e => {
+      if (controls.active) {
+        controls.active = false
+        seeker.style.width = 0
+        this._seek(controls.x / controls.clientWidth)
+      }
+    })
   },
 
   /////////////////////////////////////////////////////////

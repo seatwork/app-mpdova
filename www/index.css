@@ -106,15 +106,24 @@ footer .timeline {
   background: #ddd;
 }
 
-footer .timeline .bar {
+footer .timeline .progress {
   width: 0;
   height: 1px;
   background: #ce2f33;
 }
 
-footer .timeline .point {
+footer .timeline .pointer {
   position: absolute;
   left: 0;
+  top: 0;
+  width: 1px;
+  height: 1px;
+}
+
+footer .timeline .pointer:before {
+  content: ' ';
+  position: absolute;
+  left: -5px;
   top: -5px;
   width: 11px;
   height: 11px;
@@ -124,6 +133,7 @@ footer .timeline .point {
 }
 
 footer .controls {
+  position: relative;
   display: flex;
   align-items: center;
   height: 100%;
@@ -144,6 +154,15 @@ footer .controls .title {
 footer .controls .metadata {
   color: #999;
   font-size: 13px;
+}
+
+footer .controls .seeker {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  width: 0;
+  background: rgba(206, 47, 51, 0.1);
 }
 
 /* ----------------------------------------------

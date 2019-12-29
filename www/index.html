@@ -46,11 +46,12 @@
 
 <footer>
   <div class="timeline">
-    <div class="bar" style="width: {{ status.progress }}%"></div>
-    <div class="point" style="left: {{ status.progress }}%"></div>
+    <div class="progress" style="width: {{ status.progress }}%"></div>
+    <div class="pointer" style="left: {{ status.progress }}%"></div>
   </div>
 
   <div class="controls">
+    <div class="seeker"></div>
     <div class="flex">
       <div class="title">{{ basename(currentSong.file) }}</div>
       <div class="metadata">
