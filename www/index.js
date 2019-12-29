@@ -25,32 +25,44 @@ new Que({
 
   ready() {
     initPlugins()
+    this._initMpc()
+  },
 
+  _initMpc() {
+    this._connectMpd(() => {
+      this.switchTab(0)
+      this._addStatusListener()
+      this._addTimelineListener()
+      this._addBackListener()
+    }, () => {
+      this._addMpdServer()
+    })
+  },
+
+  _connectMpd(success, noserver) {
     let server = localStorage.getItem(SERVER_KEY)
     if (server) {
       server = server.split(':')
-      this._connectMpc(server[0], server[1])
+      mpc.connect(server[0], server[1], () => {
+        mpc.error = false
+        success && success()
+      }, err => {
+        mpc.error = true
+        mpc.disconnect()
+        alert('Connect failed: ' + err)
+      })
     } else {
-      navigator.notification.prompt('', res => {
-        if (res.buttonIndex == 1) {
-          localStorage.setItem(SERVER_KEY, res.input1)
-        }
-        this.ready()
-      }, '添加服务器', ['确定'], '10.0.0.2:6600')
+      noserver && noserver()
     }
   },
 
-  _connectMpc(host, port) {
-    mpc.connect(host, port, (res) => {
-      mpc.error = false
-      this.switchTab(0)
-      this._updateStatus()
-      this._addBackListener()
-    }, err => {
-      mpc.error = true
-      mpc.disconnect()
-      alert('Connect MPD failed: ' + err)
-    })
+  _addMpdServer() {
+    navigator.notification.prompt('', res => {
+      if (res.buttonIndex == 1) {
+        localStorage.setItem(SERVER_KEY, res.input1)
+      }
+      this._initMpc()
+    }, '添加服务器', ['确定'], '10.0.0.2:6600')
   },
 
   setting() {
@@ -58,7 +70,7 @@ new Que({
     navigator.notification.prompt('', res => {
       if (res.buttonIndex == 1) {
         localStorage.setItem(SERVER_KEY, res.input1)
-        this.ready()
+        this._initMpc()
         this.hideMenu()
       }
     }, '服务器设置', ['确定'], server)
@@ -138,6 +150,8 @@ new Que({
     if (this.status.state == 'stop') {
       return alert('播放器已经停止')
     }
+    this.delay = parseInt(e.currentTarget.dataset.delay)
+    this.countdown = this.delay
   },
 
   backToTop() {
@@ -211,9 +225,11 @@ new Que({
     mpc.cmd('currentsong', res => {
       this.currentSong = res
     })
-    setTimeout(() => {
-      this._updateStatus()
-    }, 1000)
+  },
+
+  _addStatusListener() {
+    setInterval(() => this._updateStatus(), 1000)
+    this._updateStatus()
   },
 
   /////////////////////////////////////////////////////////
@@ -232,6 +248,10 @@ new Que({
         navigator.app.exitApp()
       }
     })
+  },
+
+  _addTimelineListener() {
+
   },
 
   /////////////////////////////////////////////////////////
@@ -286,7 +306,7 @@ function initPlugins() {
   // Assign shortcut methods to mpc
   /////////////////////////////////////////////////////////
 
-  Object.assign(window.mpc, {
+  Object.assign(mpc, {
     cmd(args, callback) {
       if (mpc.error) return
       args = args.replace(/ (.*)$/, ' "$1"')
