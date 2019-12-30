@@ -12,6 +12,7 @@ const SERVER_KEY = 'SERVER_KEY'
 
 new Que({
   data: {
+    screenWidth: window.innerWidth,
     tabIndex: 0,
     delay: 0,
     countdown: 0,
@@ -85,10 +86,11 @@ new Que({
     const target = e.currentTarget
     this.tabIndex = parseInt(target ? target.dataset.index : e)
 
-    switch (this.tabIndex) {
-      case 0: this._getPlaylist(); break
-      case 1: this._getFilelist(); break
-      default: break
+    if (this.tabIndex == 0) {
+      if (this.playlist.length == 0) this._getPlaylist()
+    } else
+    if (this.tabIndex == 1) {
+      if (this.filelist.length == 0) this._getFilelist()
     }
   },
 
@@ -160,7 +162,8 @@ new Que({
   },
 
   backToTop() {
-    document.querySelector('main').scrollTop = 0
+    const elements = document.querySelectorAll('.song-list')
+    elements.forEach(e => e.scrollTop = 0)
   },
 
   /////////////////////////////////////////////////////////
@@ -197,13 +200,7 @@ new Que({
   },
 
   _getPlaylist() {
-    mpc.cmd('playlistinfo', res => {
-      if (res && res.length > 0) {
-        this.playlist = res
-      } else {
-        this.switchTab(1)
-      }
-    })
+    mpc.cmd('playlistinfo', res => this.playlist = res)
   },
 
   _updateStatus() {
@@ -277,11 +274,15 @@ new Que({
   _addSwipeListenr() {
     const main = document.querySelector('main')
     const hammer = new Hammer(main)
-    hammer.on('swipeleft', e => {
-      this.switchTab(1)
-    })
-    hammer.on('swiperight', e => {
-      this.switchTab(0)
+    hammer.on('swipeleft', () => this.switchTab(1))
+    hammer.on('swiperight', () => this.switchTab(0))
+
+    const refresh = new PullRefresh()
+    const container = document.querySelector('.song-list')
+    refresh.bind(container, () => {
+      setTimeout(()=>{
+        refresh.hide()
+      }, 5000)
     })
   },
 

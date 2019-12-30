@@ -56,6 +56,20 @@ header>div.active {
  * ------------------------------------------- */
 
 main {
+  position: relative;
+  overflow: hidden;
+}
+
+main .tab-pages {
+  position: absolute;
+  display: flex;
+  height: 100%;
+  top: 0;
+  left: 0;
+  transition: left 0.3s;
+}
+
+main .song-list {
   overflow-y: auto;
 }
 
