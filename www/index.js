@@ -23,7 +23,7 @@ new Que({
     menuOn: false,
   },
 
-  ready() {
+  onDeviceReady() {
     initPlugins()
     this._initMpc()
   },
@@ -50,7 +50,7 @@ new Que({
       }, err => {
         mpc.error = true
         mpc.disconnect()
-        alert('Connect failed: ' + err)
+        Toast.alert('Connect failed: ' + err)
       })
     } else {
       noserver && noserver()
@@ -129,11 +129,11 @@ new Que({
   },
 
   update() {
-    mpc.cmd('update', () => alert('更新成功'))
+    mpc.cmd('update', () => Toast.alert('更新成功'))
   },
 
   clear() {
-    confirm('确定清空播放列表吗？', () => {
+    Toast.confirm('确定清空播放列表吗？', () => {
       mpc.cmd('clear')
       this.playlist = []
     })
@@ -153,7 +153,7 @@ new Que({
 
   setSchedule(e) {
     if (this.status.state == 'stop') {
-      return alert('播放器已经停止')
+      return Toast.alert('播放器已经停止')
     }
     this.delay = parseInt(e.currentTarget.dataset.delay)
     this.countdown = this.delay
@@ -167,30 +167,25 @@ new Que({
   // Longpress events
   /////////////////////////////////////////////////////////
 
-  removeTouchStart(e) {
+  stop(e) {
+    navigator.vibrate(50)
+    mpc.cmd('stop')
+  },
+
+  removeSong(e) {
+    navigator.vibrate(50)
     let pos = e.currentTarget.dataset.pos
-    longpress(e.currentTarget, () => {
-      confirm('从播放列表移除', () => {
-        mpc.cmd('delete ' + pos, () => this._getPlaylist())
-      })
+    Toast.confirm('从播放列表移除', () => {
+      mpc.cmd('delete ' + pos, () => this._getPlaylist())
     })
   },
 
-  addTouchStart(e) {
+  addSong(e) {
+    navigator.vibrate(50)
     let data = e.currentTarget.dataset
-    longpress(e.currentTarget, () => {
-      confirm('添加到播放列表', () => {
-        mpc.cmd('add ' + (data.dir || data.file))
-      })
+    Toast.confirm('添加到播放列表', () => {
+      mpc.cmd('add ' + (data.dir || data.file))
     })
-  },
-
-  stopTouchStart(e) {
-    longpress(e.currentTarget, () => mpc.cmd('stop'))
-  },
-
-  touchEnd(e) {
-    clearTimeout(e.currentTarget.longPressTimer)
   },
 
   /////////////////////////////////////////////////////////
@@ -281,15 +276,12 @@ new Que({
 
   _addSwipeListenr() {
     const main = document.querySelector('main')
-    main.addEventListener('touchstart', e => {
-      main.startX = e.touches[0].clientX
+    const hammer = new Hammer(main)
+    hammer.on('swipeleft', e => {
+      this.switchTab(1)
     })
-    main.addEventListener('touchmove', e => {
-      main.endX = e.touches[0].clientX
-    })
-    main.addEventListener('touchend', e => {
-      if (main.endX - main.startX > 50) return this.switchTab(0)
-      if (main.startX - main.endX > 50) return this.switchTab(1)
+    hammer.on('swiperight', e => {
+      this.switchTab(0)
     })
   },
 
@@ -313,6 +305,11 @@ new Que({
 
 })
 
+Que.directive('hammer.press', (element, callback) => {
+  const hammer = new Hammer(element)
+  hammer.on('press', callback)
+})
+
 ///////////////////////////////////////////////////////////
 // Init plugins
 ///////////////////////////////////////////////////////////
@@ -323,7 +320,7 @@ function initPlugins() {
   // Assign notify plugin to window
   /////////////////////////////////////////////////////////
 
-  Object.assign(window, {
+  window.Toast = {
     alert(message) {
       navigator.notification.alert(message, null, '', '关闭')
     },
@@ -332,14 +329,8 @@ function initPlugins() {
       navigator.notification.confirm(message, index => {
         if (index == 1) callback()
       }, '', ['确定','取消'])
-    },
-
-    longpress(el, fn) {
-      el.longPressTimer = setTimeout(() => {
-        navigator.vibrate(50); fn()
-      }, 500)
     }
-  })
+  }
 
   /////////////////////////////////////////////////////////
   // Assign shortcut methods to mpc
@@ -356,7 +347,7 @@ function initPlugins() {
         callback && callback(res)
       }, err => {
         mpc.error = true
-        alert('Send command failed: ' + err)
+        Toast.alert('Send command failed: ' + err)
       })
     },
 

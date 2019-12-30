@@ -6,6 +6,7 @@
   <meta name="viewport" content="initial-scale=1, width=device-width, viewport-fit=cover"/>
   <link rel="stylesheet" href="index.css"/>
   <script src="cordova.js"></script>
+  <script src="src/hammer.js"></script>
   <script src="src/que.js"></script>
   <script src="index.js"></script>
   <title>Mpdova</title>
@@ -22,10 +23,9 @@
 <main class="flex">
   <!-- Playlist -->
   <div class="song-list" hidden="tabIndex==0">
-    <div foreach="item in playlist"
-     class="item {{ item.Pos == currentSong.Pos ? 'playing' : '' }}"
-     data-pos="{{ item.Pos }}" @click="play"
-     @touchstart="removeTouchStart" @touchend="touchEnd" @touchmove="touchEnd">
+    <div foreach="item in playlist" data-pos="{{ item.Pos }}"
+      class="item {{ item.Pos == currentSong.Pos ? 'playing' : '' }}"
+      @click="play" @hammer.press="removeSong">
 
       <div class="title flex">{{ basename(item.file) }}</div>
       <div class="duration">{{ formatDuration(item.Time) }}</div>
@@ -35,8 +35,8 @@
   <!-- Filelist -->
   <div class="song-list" hidden="tabIndex==1">
     <div foreach="item in filelist" class="item"
-     data-dir="{{ item.directory }}" data-file="{{ item.file }}" @click="openDirectory"
-     @touchstart="addTouchStart" @touchend="touchEnd" @touchmove="touchEnd">
+      data-dir="{{ item.directory }}" data-file="{{ item.file }}"
+      @click="openDirectory" @hammer.press="addSong">
 
       <div class="title flex">{{ item.directory || basename(item.file) }}</div>
       <div class="duration">{{ formatDuration(item.Time) }}</div>
@@ -62,8 +62,8 @@
     </div>
 
     <button @click="previous" class="previous"></button>
-    <button @click="toggle" class="{{ status.state=='play' ? 'pause' : 'play' }}"
-      @touchstart="stopTouchStart" @touchend="touchEnd" @touchmove="touchEnd">
+    <button @click="toggle" @hammer.press="stop"
+      class="{{ status.state=='play' ? 'pause' : 'play' }}">
     </button>
     <button @click="next" class="next"></button>
   </div>
