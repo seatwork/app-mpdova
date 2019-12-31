@@ -316,6 +316,7 @@ new Que({
 
 Que.directive('hammer.press', (element, callback) => {
   const hammer = new Hammer(element)
+  hammer.get("press").set({ time: 500 })
   hammer.on('press', callback)
 })
 
