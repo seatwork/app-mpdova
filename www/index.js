@@ -214,15 +214,15 @@ new Que({
 
   _updateStatus() {
     mpc.cmd('status', res => {
-      if (res.time) {
-        let progress = res.time.split(':')
-        res.progress = parseFloat(progress[0] / progress[1] * 100).toFixed(2)
-      }
       if (res.audio) {
         let audio = res.audio.split(':')
         res.samplingRate = audio[0]
         res.bitDepth = audio[1]
         res.channels = audio[2]
+      }
+      if (res.time) {
+        let progress = res.time.split(':')
+        res.progress = parseFloat(progress[0] / progress[1] * 100).toFixed(2)
       }
       res.progress = res.progress || 0
       this.status = res
