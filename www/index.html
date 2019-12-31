@@ -5,11 +5,11 @@
   <meta name="msapplication-tap-highlight" content="no"/>
   <meta name="viewport" content="initial-scale=1, width=device-width, viewport-fit=cover"/>
   <link rel="stylesheet" href="index.css"/>
-  <link rel="stylesheet" href="pull-refresh.css"/>
+  <link rel="stylesheet" href="src/pull-refresh.css"/>
   <script src="cordova.js"></script>
   <script src="src/hammer.js"></script>
-  <script src="src/pull-refresh.js"></script>
   <script src="src/que.js"></script>
+  <script src="src/pull-refresh.js"></script>
   <script src="index.js"></script>
   <title>Mpdova</title>
 </head>
@@ -25,7 +25,7 @@
 <main class="flex">
   <div class="tab-pages" style="left: {{ -tabIndex*screenWidth }}px">
     <!-- Playlist -->
-    <div class="song-list" style="width: {{ screenWidth }}px">
+    <div id="playlist" class="song-list" style="width: {{ screenWidth }}px">
       <div foreach="item in playlist" data-pos="{{ item.Pos }}"
         class="item {{ item.Pos == currentSong.Pos ? 'playing' : '' }}"
         @click="play" @hammer.press="removeSong">
@@ -36,7 +36,7 @@
     </div>
 
     <!-- Filelist -->
-    <div class="song-list" style="width: {{ screenWidth }}px">
+    <div id="filelist" class="song-list" style="width: {{ screenWidth }}px">
       <div foreach="item in filelist" class="item"
         data-dir="{{ item.directory }}" data-file="{{ item.file }}"
         @click="openDirectory" @hammer.press="addSong">

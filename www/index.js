@@ -179,7 +179,10 @@ new Que({
     navigator.vibrate(50)
     let pos = e.currentTarget.dataset.pos
     Toast.confirm('从播放列表移除', () => {
-      mpc.cmd('delete ' + pos, () => this._getPlaylist())
+      mpc.cmd('delete ' + pos, () => {
+        const index = this.playlist.findIndex(item => item.Pos == pos)
+        this.playlist.splice(index, 1)
+      })
     })
   },
 
@@ -187,7 +190,7 @@ new Que({
     navigator.vibrate(50)
     let data = e.currentTarget.dataset
     Toast.confirm('添加到播放列表', () => {
-      mpc.cmd('add ' + (data.dir || data.file))
+      mpc.cmd('add ' + (data.dir || data.file), () => this._getPlaylist())
     })
   },
 
@@ -196,11 +199,17 @@ new Que({
   /////////////////////////////////////////////////////////
 
   _getFilelist(path = '') {
-    mpc.cmd('lsinfo ' + path, res => this.filelist = res)
+    mpc.cmd('lsinfo ' + path, res => {
+      this.filelist = res
+      this.loading && this.loading.done()
+    })
   },
 
   _getPlaylist() {
-    mpc.cmd('playlistinfo', res => this.playlist = res)
+    mpc.cmd('playlistinfo', res => {
+      this.playlist = res
+      this.loading && this.loading.done()
+    })
   },
 
   _updateStatus() {
@@ -277,13 +286,12 @@ new Que({
     hammer.on('swipeleft', () => this.switchTab(1))
     hammer.on('swiperight', () => this.switchTab(0))
 
-    const refresh = new PullRefresh()
-    const container = document.querySelector('.song-list')
-    refresh.bind(container, () => {
-      setTimeout(()=>{
-        refresh.hide()
-      }, 5000)
-    })
+    const playlist = document.querySelector('#playlist')
+    const filelist = document.querySelector('#filelist')
+
+    this.loading = new PullRefresh()
+    this.loading.bind(playlist, () => this._getPlaylist())
+    this.loading.bind(filelist, () => this._getFilelist(this.directory))
   },
 
   /////////////////////////////////////////////////////////
