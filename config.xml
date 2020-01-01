@@ -25,5 +25,4 @@
     </platform>
 
     <icon src="www/image/app.png" />
-    <preference name="StatusBarBackgroundColor" value="#fff" />
 </widget>
