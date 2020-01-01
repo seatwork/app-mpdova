@@ -1,7 +1,13 @@
 window.onerror = function(msg, url, line) {
-   const idx = url.lastIndexOf('/')
-   if (idx > -1) url = url.substring(idx + 1)
-   alert('ERROR in ' + url + ' (LINE #' + line + '): ' + msg)
+  const idx = url.lastIndexOf('/')
+  if (idx > -1) url = url.substring(idx + 1)
+
+  const message = 'ERROR in ' + url + ' (LINE #' + line + '): ' + msg
+  if (window.Toast) {
+    Toast.error(message)
+  } else {
+    alert(message)
+  }
 }
 
 ///////////////////////////////////////////////////////////
@@ -37,7 +43,7 @@ new Que({
       this._addSwipeListenr()
       this._addBackListener()
     }, () => {
-      this._addMpdServer()
+      this.addMpdServer()
     })
   },
 
@@ -51,31 +57,32 @@ new Que({
       }, err => {
         mpc.error = true
         mpc.disconnect()
-        Toast.alert('Connect failed: ' + err)
+        Toast.error('Connect failed: ' + err)
       })
     } else {
       noserver && noserver()
     }
   },
 
-  _addMpdServer() {
-    navigator.notification.prompt('', res => {
-      if (res.buttonIndex == 1) {
-        localStorage.setItem(SERVER_KEY, res.input1)
-      }
-      this._initMpc()
-    }, '添加服务器', ['确定'], '10.0.0.2:6600')
-  },
-
-  setting() {
-    let server = localStorage.getItem(SERVER_KEY)
-    navigator.notification.prompt('', res => {
-      if (res.buttonIndex == 1) {
-        localStorage.setItem(SERVER_KEY, res.input1)
-        this._initMpc()
-        this.hideMenu()
-      }
-    }, '服务器设置', ['确定'], server)
+  addMpdServer() {
+    const server = localStorage.getItem(SERVER_KEY) || '10.0.0.2:6600'
+    const dialog = Toast.dialog({
+      content: `<b>服务器设置</b><input value="${server}"/>`,
+      buttons: [{
+        label: '确定',
+        type: 'primary',
+        onClick: () => {
+          const input = dialog.querySelector('input')
+          localStorage.setItem(SERVER_KEY, input.value)
+          this._initMpc()
+          this.hideMenu()
+        }
+      }, {
+        label: '取消',
+        type: 'default',
+        onClick: null
+      }]
+    })
   },
 
   /////////////////////////////////////////////////////////
@@ -131,7 +138,7 @@ new Que({
   },
 
   update() {
-    mpc.cmd('update', () => Toast.alert('更新成功'))
+    mpc.cmd('update', () => Toast.success('更新成功'))
   },
 
   clear() {
@@ -155,7 +162,7 @@ new Que({
 
   setSchedule(e) {
     if (this.status.state == 'stop') {
-      return Toast.alert('播放器已经停止')
+      return Toast.info('播放器已经停止')
     }
     this.delay = parseInt(e.currentTarget.dataset.delay)
     this.countdown = this.delay
@@ -178,20 +185,26 @@ new Que({
   removeSong(e) {
     navigator.vibrate(50)
     let pos = e.currentTarget.dataset.pos
-    Toast.confirm('从播放列表移除', () => {
-      mpc.cmd('delete ' + pos, () => {
-        const index = this.playlist.findIndex(item => item.Pos == pos)
-        this.playlist.splice(index, 1)
-      })
-    })
+    Toast.actionSheet([{
+      label: '从播放列表移除',
+      onClick: () => {
+        mpc.cmd('delete ' + pos, () => {
+          const index = this.playlist.findIndex(item => item.Pos == pos)
+          this.playlist.splice(index, 1)
+        })
+      }
+    }])
   },
 
   addSong(e) {
     navigator.vibrate(50)
     let data = e.currentTarget.dataset
-    Toast.confirm('添加到播放列表', () => {
-      mpc.cmd('add ' + (data.dir || data.file), () => this._getPlaylist())
-    })
+    Toast.actionSheet([{
+      label: '添加到播放列表',
+      onClick: () => {
+        mpc.cmd('add ' + (data.dir || data.file), () => this._getPlaylist())
+      }
+    }])
   },
 
   /////////////////////////////////////////////////////////
@@ -327,22 +340,6 @@ Que.directive('hammer.press', (element, callback) => {
 function initPlugins() {
 
   /////////////////////////////////////////////////////////
-  // Assign notify plugin to window
-  /////////////////////////////////////////////////////////
-
-  window.Toast = {
-    alert(message) {
-      navigator.notification.alert(message, null, '', '关闭')
-    },
-
-    confirm(message, callback) {
-      navigator.notification.confirm(message, index => {
-        if (index == 1) callback()
-      }, '', ['确定','取消'])
-    }
-  }
-
-  /////////////////////////////////////////////////////////
   // Assign shortcut methods to mpc
   /////////////////////////////////////////////////////////
 
@@ -357,7 +354,7 @@ function initPlugins() {
         callback && callback(res)
       }, err => {
         mpc.error = true
-        Toast.alert('Send command failed: ' + err)
+        Toast.error('Send command failed: ' + err)
       })
     },
 
