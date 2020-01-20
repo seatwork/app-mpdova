@@ -241,11 +241,12 @@ menu>hr {
   height: 0;
   border: 0;
   border-top: #eee 1px solid;
+  margin: 10px 0;
 }
 
 menu .title {
   font-weight: 700;
-  padding: 20px 30px;
+  padding: 20px 30px 10px;
 }
 
 menu i {
